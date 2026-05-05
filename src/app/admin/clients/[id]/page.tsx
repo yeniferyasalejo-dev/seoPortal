@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +7,8 @@ import { ProjectStatusBadge } from "@/components/shared/StatusBadge";
 import { TaskList } from "@/components/dashboard/TaskList";
 import { TrafficChart } from "@/components/charts/TrafficChart";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { mockProjects, mockTasks, mockDocuments, mockGA4, mockGSC } from "@/lib/mock-data";
+import { mockGA4, mockGSC } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Users, MousePointer, Eye, Target, Download } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -16,9 +18,32 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const project = mockProjects.find((p) => p.id === id) || mockProjects[0];
-  const tasks = mockTasks.filter((t) => t.project_id === project.id);
-  const documents = mockDocuments.filter((d) => d.project_id === project.id);
+  const supabase = await createClient();
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("*, client:profiles!projects_client_id_fkey(*)")
+    .eq("id", id)
+    .single();
+
+  if (!project) {
+    redirect("/admin/clients");
+  }
+
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("project_id", id)
+    .order("created_at", { ascending: false });
+
+  const { data: documents } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("project_id", id)
+    .order("created_at", { ascending: false });
+
+  const allTasks = tasks || [];
+  const allDocuments = documents || [];
 
   return (
     <div className="space-y-6">
@@ -36,24 +61,25 @@ export default async function ClientDetailPage({
         <ProjectStatusBadge status={project.status} />
       </div>
 
+      {/* GA4/GSC metrics - still mock until Google API is connected */}
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard title="Sesiones" value={mockGA4.sessions} change={12.3} icon={Users} />
         <MetricCard title="Clics (GSC)" value={mockGSC.clicks} change={8.1} icon={MousePointer} />
         <MetricCard title="Impresiones" value={mockGSC.impressions} change={15.2} icon={Eye} />
-        <MetricCard title="Posición promedio" value={mockGSC.position} change={-2.4} icon={Target} format="position" />
+        <MetricCard title="Posicion promedio" value={mockGSC.position} change={-2.4} icon={Target} format="position" />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="bg-secondary border border-border">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="tasks">Tareas ({tasks.length})</TabsTrigger>
-          <TabsTrigger value="documents">Documentos ({documents.length})</TabsTrigger>
+          <TabsTrigger value="tasks">Tareas ({allTasks.length})</TabsTrigger>
+          <TabsTrigger value="documents">Documentos ({allDocuments.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground">Tráfico - Últimos 30 días</CardTitle>
+              <CardTitle className="text-foreground">Trafico - Ultimos 30 dias</CardTitle>
             </CardHeader>
             <CardContent>
               <TrafficChart data={mockGA4.sessionsByDate} />
@@ -67,7 +93,13 @@ export default async function ClientDetailPage({
               <CardTitle className="text-foreground">Tareas del proyecto</CardTitle>
             </CardHeader>
             <CardContent>
-              <TaskList tasks={tasks} />
+              {allTasks.length > 0 ? (
+                <TaskList tasks={allTasks} />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay tareas para este proyecto.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -79,7 +111,7 @@ export default async function ClientDetailPage({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {documents.map((doc) => (
+                {allDocuments.map((doc) => (
                   <div
                     key={doc.id}
                     className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -95,6 +127,11 @@ export default async function ClientDetailPage({
                     </Button>
                   </div>
                 ))}
+                {allDocuments.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay documentos para este proyecto.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

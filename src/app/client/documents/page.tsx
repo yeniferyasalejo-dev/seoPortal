@@ -1,19 +1,38 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockDocuments } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { Download, FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 const typeLabels: Record<string, string> = {
   propuesta: "Propuesta",
   reporte: "Reporte",
-  auditoria: "Auditoría",
+  auditoria: "Auditoria",
   otro: "Otro",
 };
 
-export default function DocumentsPage() {
-  const docs = mockDocuments.filter((d) => d.visible_to_client);
+export default async function DocumentsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Get client's project
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("client_id", user!.id)
+    .single();
+
+  let docs: any[] = [];
+  if (project) {
+    const { data: documents } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("project_id", project.id)
+      .eq("visible_to_client", true)
+      .order("created_at", { ascending: false });
+    docs = documents || [];
+  }
 
   return (
     <div className="space-y-6">
@@ -31,7 +50,7 @@ export default function DocumentsPage() {
                   <p className="text-sm font-medium text-foreground truncate">{doc.title}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-                      {typeLabels[doc.type]}
+                      {typeLabels[doc.type] || doc.type}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatDate(doc.created_at)}
@@ -54,7 +73,7 @@ export default function DocumentsPage() {
 
       {docs.length === 0 && (
         <p className="text-center text-sm text-muted-foreground py-12">
-          Aún no hay documentos disponibles.
+          Aun no hay documentos disponibles.
         </p>
       )}
     </div>

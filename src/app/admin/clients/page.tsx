@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,11 +10,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProjectStatusBadge } from "@/components/shared/StatusBadge";
-import { mockProjects } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { Plus, ExternalLink } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+  const supabase = await createClient();
+
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("*, client:profiles!projects_client_id_fkey(*)")
+    .order("created_at", { ascending: false });
+
+  const allProjects = projects || [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -41,7 +50,7 @@ export default function ClientsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockProjects.map((project) => (
+              {allProjects.map((project) => (
                 <TableRow key={project.id} className="border-border">
                   <TableCell className="font-medium text-foreground">
                     {project.name}
@@ -67,6 +76,13 @@ export default function ClientsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {allProjects.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No hay clientes aun. Crea tu primer cliente.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

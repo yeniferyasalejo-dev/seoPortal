@@ -3,13 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectStatusBadge } from "@/components/shared/StatusBadge";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { mockProjects, mockTasks } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import { Users, CheckSquare, FileText, TrendingUp, Plus } from "lucide-react";
-import { formatDate } from "@/lib/utils";
 
-export default function AdminDashboard() {
-  const activeTasks = mockTasks.filter((t) => t.status !== "completado" && t.status !== "cancelado");
-  const completedTasks = mockTasks.filter((t) => t.status === "completado");
+export default async function AdminDashboard() {
+  const supabase = await createClient();
+
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("*, client:profiles!projects_client_id_fkey(*)")
+    .order("created_at", { ascending: false });
+
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("*");
+
+  const { count: docCount } = await supabase
+    .from("documents")
+    .select("*", { count: "exact", head: true });
+
+  const allProjects = projects || [];
+  const allTasks = tasks || [];
+  const activeTasks = allTasks.filter((t) => t.status !== "completado" && t.status !== "cancelado");
+  const completedTasks = allTasks.filter((t) => t.status === "completado");
 
   return (
     <div className="space-y-6">
@@ -31,7 +47,7 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="mt-2 text-2xl font-semibold text-foreground">
-              {mockProjects.filter((p) => p.status === "active").length}
+              {allProjects.filter((p) => p.status === "active").length}
             </p>
           </CardContent>
         </Card>
@@ -59,7 +75,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Documentos</p>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="mt-2 text-2xl font-semibold text-foreground">3</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{docCount || 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -71,7 +87,12 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {mockProjects.map((project) => (
+              {allProjects.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay proyectos aun. Crea tu primer cliente.
+                </p>
+              )}
+              {allProjects.map((project) => (
                 <Link
                   key={project.id}
                   href={`/admin/clients/${project.id}`}
