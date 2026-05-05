@@ -44,7 +44,7 @@ export default function TasksPage() {
       </div>
 
       <div className="flex gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
           <SelectTrigger className="w-[180px] bg-secondary border-border">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
@@ -56,7 +56,7 @@ export default function TasksPage() {
             <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={projectFilter} onValueChange={setProjectFilter}>
+        <Select value={projectFilter} onValueChange={(v) => setProjectFilter(v ?? "all")}>
           <SelectTrigger className="w-[180px] bg-secondary border-border">
             <SelectValue placeholder="Proyecto" />
           </SelectTrigger>
@@ -80,7 +80,7 @@ export default function TasksPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground">{task.title}</p>
                       {!task.visible_to_client && (
-                        <EyeOff className="h-3 w-3 text-muted-foreground" title="Oculto al cliente" />
+                        <EyeOff className="h-3 w-3 text-muted-foreground" />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">

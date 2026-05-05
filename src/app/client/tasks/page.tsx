@@ -45,7 +45,7 @@ export default function ClientTasksPage() {
       </Card>
 
       <div className="flex gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
           <SelectTrigger className="w-[180px] bg-secondary border-border">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
