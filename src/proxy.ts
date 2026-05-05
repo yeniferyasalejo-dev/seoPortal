@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Allow API routes and setup
@@ -33,11 +33,9 @@ export function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh session
-  const sessionPromise = supabase.auth.getUser();
+  // Refresh session — this ensures auth cookies are kept up to date
+  await supabase.auth.getUser();
 
-  // Can't await in non-async proxy — use a workaround
-  // For now, let all requests through and protect in layouts
   return supabaseResponse;
 }
 
