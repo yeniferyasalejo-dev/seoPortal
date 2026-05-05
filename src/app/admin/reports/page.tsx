@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
-import { Upload, Download, FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default async function ReportsPage() {
@@ -16,13 +16,7 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Reportes y Documentos</h1>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Upload className="h-4 w-4 mr-2" />
-          Subir documento
-        </Button>
-      </div>
+      <h1 className="text-2xl font-semibold text-foreground">Reportes y Documentos</h1>
 
       <Card className="bg-card border-border">
         <CardContent className="p-0">
